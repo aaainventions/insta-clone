@@ -22,8 +22,13 @@ function serveStatic(req, res) {
 
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     const ext = path.extname(filePath);
-    const type = ext === '.css' ? 'text/css' : ext === '.js' ? 'text/javascript' : 'text/html';
-    res.writeHead(200, { 'Content-Type': type });
+    const typeMap = {
+      '.css': 'text/css',
+      '.js': 'text/javascript',
+      '.html': 'text/html',
+      '.json': 'application/json',
+    };
+    res.writeHead(200, { 'Content-Type': typeMap[ext] || 'application/octet-stream' });
     fs.createReadStream(filePath).pipe(res);
     return true;
   }
@@ -53,28 +58,94 @@ function parseBody(req) {
   });
 }
 
+function getQueryValue(reqUrl, key) {
+  const requestUrl = new URL(reqUrl, 'http://localhost');
+  return requestUrl.searchParams.get(key) || '';
+}
+
 function createServer(dbFile = process.env.DB_FILE || path.join(__dirname, 'data.json')) {
   const store = createStore(dbFile);
 
   return http.createServer(async (req, res) => {
     try {
-      if (req.method === 'GET' && req.url === '/api/posts') {
-        return sendJson(res, 200, store.getPosts());
+      if (req.method === 'GET' && req.url.startsWith('/api/posts')) {
+        const viewer = getQueryValue(req.url, 'viewer');
+        return sendJson(res, 200, store.getPosts(viewer));
+      }
+
+      if (req.method === 'GET' && req.url.startsWith('/api/explore')) {
+        const query = getQueryValue(req.url, 'q');
+        const tag = getQueryValue(req.url, 'tag');
+        const viewer = getQueryValue(req.url, 'viewer');
+        return sendJson(res, 200, store.explore(query, tag, viewer));
+      }
+
+      if (req.method === 'GET' && req.url.startsWith('/api/feed/')) {
+        const username = decodeURIComponent(req.url.split('/').pop()).trim();
+        return sendJson(res, 200, store.getFeed(username));
+      }
+
+      if (req.method === 'GET' && req.url.startsWith('/api/saved/')) {
+        const username = decodeURIComponent(req.url.split('/').pop()).trim();
+        return sendJson(res, 200, store.getSavedPosts(username));
+      }
+
+      if (req.method === 'GET' && req.url.startsWith('/api/stories/')) {
+        const username = decodeURIComponent(req.url.split('/').pop()).trim();
+        return sendJson(res, 200, store.getStories(username));
+      }
+
+      if (req.method === 'GET' && req.url.startsWith('/api/notifications/')) {
+        const username = decodeURIComponent(req.url.split('/').pop()).trim();
+        return sendJson(res, 200, store.getNotifications(username));
+      }
+
+      if (req.method === 'GET' && req.url === '/api/users') {
+        return sendJson(res, 200, store.getUsers());
+      }
+
+      if (req.method === 'POST' && req.url === '/api/users') {
+        const body = await parseBody(req);
+        const required = ['username', 'name', 'avatarUrl', 'bio'];
+        if (required.some((key) => !body[key])) {
+          return sendJson(res, 400, { error: 'username, name, avatarUrl and bio are required' });
+        }
+
+        const user = store.createUser({
+          username: String(body.username).trim(),
+          name: String(body.name).trim(),
+          avatarUrl: String(body.avatarUrl).trim(),
+          bio: String(body.bio).trim(),
+        });
+
+        return sendJson(res, 201, user);
+      }
+
+      if (req.method === 'POST' && req.url === '/api/follow') {
+        const body = await parseBody(req);
+        if (!body.follower || !body.following) {
+          return sendJson(res, 400, { error: 'follower and following are required' });
+        }
+
+        return sendJson(
+          res,
+          200,
+          store.followUser(String(body.follower).trim(), String(body.following).trim()),
+        );
       }
 
       if (req.method === 'POST' && req.url === '/api/posts') {
         const body = await parseBody(req);
-        const { username, avatarUrl, imageUrl, caption } = body;
+        const { username, imageUrl, caption } = body;
 
-        if (!username || !avatarUrl || !imageUrl || !caption) {
+        if (!username || !imageUrl || !caption) {
           return sendJson(res, 400, {
-            error: 'username, avatarUrl, imageUrl and caption are required',
+            error: 'username, imageUrl and caption are required',
           });
         }
 
         const post = store.createPost({
           username: String(username).trim(),
-          avatarUrl: String(avatarUrl).trim(),
           imageUrl: String(imageUrl).trim(),
           caption: String(caption).trim(),
         });
@@ -84,9 +155,22 @@ function createServer(dbFile = process.env.DB_FILE || path.join(__dirname, 'data
 
       const likeMatch = req.url.match(/^\/api\/posts\/(\d+)\/like$/);
       if (req.method === 'POST' && likeMatch) {
-        const post = store.likePost(Number(likeMatch[1]));
+        const body = await parseBody(req);
+        if (!body.username) return sendJson(res, 400, { error: 'username is required' });
+
+        const post = store.toggleLike(Number(likeMatch[1]), String(body.username).trim());
         if (!post) return sendJson(res, 404, { error: 'Post not found' });
         return sendJson(res, 200, post);
+      }
+
+      const saveMatch = req.url.match(/^\/api\/posts\/(\d+)\/save$/);
+      if (req.method === 'POST' && saveMatch) {
+        const body = await parseBody(req);
+        if (!body.username) return sendJson(res, 400, { error: 'username is required' });
+
+        const result = store.toggleSave(Number(saveMatch[1]), String(body.username).trim());
+        if (!result) return sendJson(res, 404, { error: 'Post not found' });
+        return sendJson(res, 200, result);
       }
 
       const commentMatch = req.url.match(/^\/api\/posts\/(\d+)\/comments$/);
