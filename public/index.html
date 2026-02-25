@@ -3,42 +3,77 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Insta Clone</title>
+    <title>Insta Clone Pro</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <header class="topbar">
-      <h1>InstaClone</h1>
+      <h1>InstaClone Pro</h1>
+      <div class="auth-row">
+        <label for="current-user">Signed in as</label>
+        <select id="current-user"></select>
+      </div>
     </header>
 
     <main class="app-layout">
-      <section class="composer">
+      <aside class="composer">
         <h2>Create Post</h2>
         <form id="post-form">
-          <input name="username" placeholder="Username" required />
-          <input name="avatarUrl" placeholder="Avatar URL" required />
           <input name="imageUrl" placeholder="Image URL" required />
-          <textarea name="caption" placeholder="Write a caption" required></textarea>
+          <textarea name="caption" placeholder="Write a caption with #hashtags" required></textarea>
           <button type="submit">Share</button>
         </form>
-      </section>
+
+        <h3>Create Profile</h3>
+        <form id="profile-form">
+          <input name="username" placeholder="Username" required />
+          <input name="name" placeholder="Display name" required />
+          <input name="avatarUrl" placeholder="Avatar URL" required />
+          <textarea name="bio" placeholder="Bio" required></textarea>
+          <button type="submit">Create Profile</button>
+        </form>
+      </aside>
 
       <section>
+        <div class="stories" id="stories"></div>
+
+        <div class="toolbar">
+          <div class="tabs">
+            <button class="tab active" data-view="feed">Feed</button>
+            <button class="tab" data-view="explore">Explore</button>
+            <button class="tab" data-view="saved">Saved</button>
+          </div>
+          <input id="search-input" placeholder="Search captions or users" />
+        </div>
+
         <div id="feed" class="feed"></div>
       </section>
+
+      <aside class="sidebar">
+        <h3>Notifications</h3>
+        <ul id="notifications" class="notifications"></ul>
+      </aside>
     </main>
 
     <template id="post-template">
       <article class="post">
         <div class="post-header">
           <img class="avatar" alt="avatar" />
-          <strong class="username"></strong>
+          <div>
+            <strong class="username"></strong>
+            <p class="bio"></p>
+          </div>
+          <button class="follow-btn">Follow</button>
         </div>
         <img class="post-image" alt="post" />
         <div class="post-body">
           <p class="caption"></p>
-          <button class="like-btn">❤️ Like</button>
-          <span class="like-count"></span>
+          <div class="actions">
+            <button class="like-btn">❤️ Like</button>
+            <button class="save-btn">🔖 Save</button>
+            <span class="like-count"></span>
+          </div>
+          <div class="tags"></div>
           <form class="comment-form">
             <input name="comment" placeholder="Add a comment..." required />
             <button type="submit">Post</button>

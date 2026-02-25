@@ -1,10 +1,19 @@
-# Insta Clone (Full Stack)
+# Insta Clone Pro (Full Stack)
 
-A lightweight full-stack Instagram clone with:
+A significantly upgraded full-stack Instagram clone built with a Node.js HTTP server and a dynamic vanilla JS frontend.
 
-- **Node.js HTTP API** for posts, likes, and comments
-- **JSON-file persistence** with seeded starter posts/comments
-- **Vanilla JS frontend** with a feed and post composer
+## Features
+
+- Multi-user profile system (create profiles in-app)
+- Personalized feed based on follow graph
+- Explore view with full-text search and hashtag filtering
+- Story strip generated from followed users
+- Post composer with automatic hashtag extraction
+- Like/unlike toggle per user
+- Save/unsave posts with dedicated Saved tab
+- Follow/unfollow from feed cards
+- Real-time-ish notification center (likes, comments, follows)
+- JSON file persistence for all resources (posts, users, comments, follows, bookmarks, notifications)
 
 ## Run locally
 
@@ -16,10 +25,24 @@ Then open `http://localhost:3000`.
 
 ## API routes
 
-- `GET /api/posts` - list posts with comments
-- `POST /api/posts` - create a post
-- `POST /api/posts/:id/like` - like a post
-- `POST /api/posts/:id/comments` - add comment to a post
+### Posts & discovery
+- `GET /api/posts?viewer=<username>`
+- `GET /api/feed/:username`
+- `GET /api/saved/:username`
+- `GET /api/explore?q=<query>&tag=<tag>&viewer=<username>`
+- `POST /api/posts`
+- `POST /api/posts/:id/like`
+- `POST /api/posts/:id/save`
+- `POST /api/posts/:id/comments`
+
+### Users & social graph
+- `GET /api/users`
+- `POST /api/users`
+- `POST /api/follow`
+
+### Extras
+- `GET /api/stories/:username`
+- `GET /api/notifications/:username`
 
 ## Test
 
