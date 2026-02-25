@@ -1,0 +1,11 @@
+{
+  "name": "insta-clone",
+  "version": "1.0.0",
+  "description": "Full-stack Instagram clone",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --test"
+  }
+}
